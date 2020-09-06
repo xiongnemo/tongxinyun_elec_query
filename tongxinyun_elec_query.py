@@ -111,9 +111,12 @@ def main(argv):
         exit(3)
 
     result = tongxinyun_elec_query(_userId, _openToken)
-    result_data = result['data']
-    for data in result_data:
-        print(data['building'] + data['room'] + ": " + str(data['remain']))
+    try:
+        result_data = result['data']
+        for data in result_data:
+            print(data['building'] + data['room'] + ": " + str(data['remain']))
+    except KeyError:
+        print("There maybe something wrong on Tongxinyun's side. Try again later.")
     return 0
 
 
