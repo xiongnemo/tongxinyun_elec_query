@@ -1,38 +1,35 @@
-import requests
-import json
-from pprint import pprint
-import sys
 import getopt
+import json
+import sys
+from typing import Union
+
+import requests
 
 # open_token lies in EMP_SHELL_SP_KEY.xml, name=openToken
 # user_id lies in EMP_SHELL_SP_KEY.xml, name=last_login_user_name or else
 
 
-def get_tongxinyun_elec_ticket(user_id: str, open_token: str) -> str:
+def get_tongxinyun_elec_ticket(open_token: str) -> str:
     # Step 1
     # from your openToken and userId get your login ticket
     step_one_headers = {
         'openToken': open_token,
         'Content-Type': 'application/x-www-form-urlencoded',
-        'Host': 'tjyun.tongji.edu.cn',
-        'Connection': 'close',
     }
-    step_one_base_url = "http://tjyun.tongji.edu.cn/3gol/getLightAppURL.action"
-    step_one_url = step_one_base_url + "?openToken="
-    step_one_url += open_token
-    step_one_url += "&appid=200019&mid=104"
-    step_one_url += "&userId="
-    step_one_url += user_id
-    step_one_url += "&urlParam=https%3A%2F%2Ftjpay.tongji.edu.cn%2F%23%2FHomePage"
+    step_one_url = "https://txb.tongji.edu.cn/gateway/ticket/terminal/lappAccess?deviceType=1&appId=200019"
     temp = requests.post(step_one_url, headers=step_one_headers)
     temp_json_result = json.loads(temp.text)
     # get your ticket!
-    elec_ticket = temp_json_result['data']['ticket']
+    elec_ticket_url = temp_json_result['data']['url']
+    start = elec_ticket_url.find("&ticket=") + len("&ticket=")
+    end = elec_ticket_url.find("&client_id")
+    elec_ticket = elec_ticket_url[start:end]
+    # print(elec_ticket)
     # put temp_json_result['data']['url'] in your browser to directly login into it.
     return elec_ticket
 
 
-def get_tongjixun_elec_jwt(elec_ticket: str) -> [str, str]:
+def get_tongjixun_elec_jwt(elec_ticket: str) -> Union[str, str]:
     # Step two
     # Login and get JWT
     step_two_headers = {
@@ -54,7 +51,7 @@ def get_tongjixun_elec_jwt(elec_ticket: str) -> [str, str]:
     response_headers = temp.headers
     # 'Authorization': 'Bearer ******'
     auth_jwt = response_headers['Authorization']
-    return auth_jwt, elec_userid
+    return Union[auth_jwt, elec_userid]
 
 
 def get_tongxinyun_elec(auth_jwt: str, elec_userid: str) -> str:
@@ -73,8 +70,8 @@ def get_tongxinyun_elec(auth_jwt: str, elec_userid: str) -> str:
     return temp_json_result
 
 
-def tongxinyun_elec_query(user_id: str, open_token: str) -> dict:
-    ticket = get_tongxinyun_elec_ticket(user_id, open_token)
+def tongxinyun_elec_query(open_token: str) -> dict:
+    ticket = get_tongxinyun_elec_ticket(open_token)
     auth_jwt, elec_userid = get_tongjixun_elec_jwt(ticket)
     result = get_tongxinyun_elec(auth_jwt, elec_userid)
     return result
@@ -88,10 +85,9 @@ def show_help():
 
 def main(argv):
     _openToken = ""
-    _userId = ""
     try:
         opts, args = getopt.getopt(
-            argv, "ho:u:", ["help", "openToken=", "userId="])
+            argv, "ho:u:", ["help", "openToken="])
     except getopt.GetoptError:
         show_help()
         exit(2)
@@ -102,15 +98,13 @@ def main(argv):
             sys.exit(1)
         elif opt in ("-o", "--openToken"):
             _openToken = arg
-        elif opt in ("-u", "--userId"):
-            _userId = arg
 
-    if _openToken == "" or _userId == "":
+    if _openToken == "":
         print("Missing options.")
         show_help()
         exit(3)
 
-    result = tongxinyun_elec_query(_userId, _openToken)
+    result = tongxinyun_elec_query(_openToken)
     try:
         result_data = result['data']
         for data in result_data:
