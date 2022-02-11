@@ -78,16 +78,16 @@ def tongxinyun_elec_query(open_token: str) -> dict:
 
 
 def show_help():
-    print('Usage: tongxinyun_elec_query.py -o <openToken> -u <userId>')
-    print('   or: tongxinyun_elec_query.py --openToken=<openToken> --userId=<userId>')
-    print('You should get your openToken and userId from Tongxinyun.')
+    print('Usage: tongxinyun_elec_query.py -o <openToken>')
+    print('   or: tongxinyun_elec_query.py --openToken=<openToken>')
+    print('You should get your openToken from Tongxinyun.')
 
 
 def main(argv):
     _openToken = ""
     try:
         opts, args = getopt.getopt(
-            argv, "ho:u:", ["help", "openToken="])
+            argv, "ho:", ["help", "openToken="])
     except getopt.GetoptError:
         show_help()
         exit(2)
